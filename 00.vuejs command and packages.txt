@@ -1,0 +1,18 @@
+Vuejs important command adn packages...
+=====================================
+
+
+commands:
+=====================================
+01.npm run watch
+02.
+
+
+
+=====================================
+Packages
+=====================================
+
+1.for chat auto scroll
+---------------------------------------------
+https://github.com/theomessin/vue-chat-scroll
