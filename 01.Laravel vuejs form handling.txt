@@ -1,3 +1,8 @@
+
+
+====================================================
+Example : 01
+====================================================
 The Good Way
 
 So what should you be doing? Well, actually it’s really simple. Use the <form> element!
@@ -41,3 +46,59 @@ export default {
   }
 }
 </script>
+
+
+
+====================================================
+Example :02
+====================================================
+
+<form id="demo">
+  <!-- text -->
+  <p>
+    <input type="text" v-model="msg">
+    {{msg}}
+  </p>
+  <!-- checkbox -->
+  <p>
+    <input type="checkbox" v-model="checked">
+    {{checked ? "yes" : "no"}}
+  </p>
+  <!-- radio buttons -->
+  <p>
+    <input type="radio" name="picked" value="one" v-model="picked">
+    <input type="radio" name="picked" value="two" v-model="picked">
+    {{picked}}
+  </p>
+  <!-- select -->
+  <p>
+    <select v-model="selected">
+      <option>one</option>
+      <option>two</option>
+    </select>
+    {{selected}}
+  </p>
+  <!-- multiple select -->
+  <p>
+    <select v-model="multiSelect" multiple>
+      <option>one</option>
+      <option>two</option>
+      <option>three</option>
+    </select>
+    {{multiSelect}}
+  </p>
+  <p><pre>data: {{$data | json 2}}</pre></p>
+</form>
+
+	
+
+new Vue({
+  el: '#demo',
+  data: {
+    msg      : 'hi!',
+    checked  : true,
+    picked   : 'one',
+    selected : 'two',
+    multiSelect: ['one', 'three']
+  }
+})
