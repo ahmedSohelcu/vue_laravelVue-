@@ -63,3 +63,9 @@ php artisan make:event OurEventName ..
 Route::get('/', function (){
     event(new OurEventName('This is new message.'));
 });
+
+
+-------------------------------------------------------------------
+8.BroadcastServiceProvider
+-------------------------------------------------------------------
+Uncomment BroadcastServiceProvider from config/app.php file....
