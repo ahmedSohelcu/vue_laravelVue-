@@ -1,0 +1,65 @@
+
+====================================================
+Activate realtime messaging 
+(Like someone is typing, loged in etc)
+====================================================
+Step for pusher...
+---------------------------
+
+-------------------------------------------------------------------
+Follow the rule of Laravel Broadcasting from laravel documentation
+-------------------------------------------------------------------
+1.install pusher 
+composer require pusher/pusher-php-server "~4.0"
+
+
+-------------------------------------------------------------------
+2.Add this code in config/broadcasting.php
+-------------------------------------------------------------------
+'options' => [
+    'cluster' => 'eu',
+    'useTLS' => true
+],
+
+
+-------------------------------------------------------------------
+3.Add this code in resources/js/bootstrap.js 
+-------------------------------------------------------------------
+import Echo from "laravel-echo";
+
+window.Pusher = require('pusher-js');
+
+window.Echo = new Echo({
+    broadcaster: 'pusher',
+    key: 'your-pusher-channels-key'
+});
+
+-------------------------------------------------------------------
+4.Finally, you will need to change your broadcast driver to pusher in your .env file:
+-------------------------------------------------------------------
+BROADCAST_DRIVER=pusher
+
+
+-------------------------------------------------------------------
+5.add credential from pusher.com (from your app) in .env file...
+-------------------------------------------------------------------
+//this setting is from my featurebangla project app [change accordign to your app credential]
+PUSHER_APP_ID=1013551
+PUSHER_APP_KEY=dc49a011680021a1b507
+PUSHER_APP_SECRET=bc66355006268fd4c4f6
+PUSHER_APP_CLUSTER=ap2
+
+-------------------------------------------------------------------
+6.create an event according to our need (with implements ShouldBroadcast)
+-------------------------------------------------------------------
+php artisan make:event OurEventName ..
+6.1: follow the #'Defining Broadcast Events' from laravel documentation..
+
+
+-------------------------------------------------------------------
+7. Broadcasting Events //Follow 'Broadcasting Events' from laravel documentation..
+-------------------------------------------------------------------
+//testing..
+Route::get('/', function (){
+    event(new OurEventName('This is new message.'));
+});

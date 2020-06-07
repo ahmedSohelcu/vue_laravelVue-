@@ -107,7 +107,405 @@ new Vue({
 
 
 
-====================================================
+====================================================================================================
 Example :03
-====================================================
+====================================================================================================
 https://medium.com/@mscherrenberg/laravel-5-6-vue-js-simple-form-submission-using-components-92b6d5fd4434
+
+Laravel/Vue.js simple form submission using Vue components.
+Mark Scherrenberg
+Mark Scherrenberg
+Aug 3, 2018 · 5 min read
+
+Vue is a progressive framework for building user interfaces, if you used any recent version of Laravel you might have noticed it’s standard bundled in Laravel. I’m going to show you a simple, yet efficient way to submit a form using Vue.js.
+
+For this article, I’m using Laravel 5.6. To install Laravel visit: https://laravel.com/docs/5.6#installation.
+
+We’ll start by heading over to the folder /resources/assets/js/components notice that there’s a ExampleComponent.vue already included. When you head over to /resources/assets/js/app.js you should see the file being registered to Vue as a component. Also notice that that Vue is instantiated beneath it, it wraps around an element with the ID ‘app’. It’s good to know that we can of course only use Vue inside this element.
+
+So.. Let’s say you want to use the example component. Then you’ll simply add this html element <example-component></example-component> in your html. Just make sure that it’s inside the wrapper with the ID ‘app’.
+
+    To avoid any mistakes, when editing your Components, Javascript or SCSS files. Don’t forget to run ‘npm run dev’ or better, keep it running using ‘npm run watch’.
+
+Inside /resources/assets/js/components we create a new component file, I’ll name it ‘ContactForm.vue’, since I’ll be creating.. a contact form obviously.
+
+Inside our component file ContactForm.vue we’re going to add the HTML template part. Just like you would in a blade file, just wrapped inside <template>, like this:
+
+<template>
+    <form>
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" class="form-control" name="name" id="name" />
+        </div>
+
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" class="form-control" name="email" id="email" />
+        </div>
+
+        <div class="form-group">
+            <label for="message">Message</label>
+            <textarea class="form-control" name="message" id="message" rows="5"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Send message</button>
+    </form>
+</template>
+
+Now we’ve just a simple html contact form with some bootstrap classes. I just want to show you how to make this visible in your blade view.
+
+So head over to /resources/assets/js/app.js and just beneath the already registered example component, include your new component:
+require('./bootstrap');
+
+window.Vue = require('vue');
+
+Vue.component('example-component', require('./components/ExampleComponent.vue'));
+
+/* Register our new component: */
+Vue.component('contact-form', require('./components/ContactForm.vue'));
+
+const app = new Vue({
+    el: '#app'
+});
+view raw
+app.js hosted with ? by GitHub 
+
+Now I’m not going to dive into how you would setup a blade file, but you should get the point of the following script to display your component. Just make sure it is wrapped in a ‘container’ element having the id ‘app’. This could also be attached to the body component. Notice that the name of our HTML element <contact-form> is the name of our component we registered: Vue.component(‘contact-form’, …).
+
+@extends('layouts.app')
+
+@section('content')
+    <div id="app"> <!-- ID: 'app' -->
+        <div class="row">
+            <div class="col-6 mx-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Contact me</h2>
+                    </div>
+                    <div class="card-body">
+                        <!--
+                            Our component:
+                        -->
+                        <contact-form></contact-form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+    To avoid any mistakes, when editing your Components, Javascript or SCSS files. Don’t forget to run ‘npm run dev’ or better, keep it running using ‘npm run watch’.
+
+Now you should see a simple form on your page.
+
+Now let’s make in processable. Head back to ContactForm.vue and add this little Javascript at the bottom of the file after </template>.
+
+<script>
+export default {
+  data() {
+    return {
+      fields: {},
+      errors: {},
+    }
+  },
+  methods: {
+    submit() {
+      this.errors = {};
+      axios.post('/submit', this.fields).then(response => {
+        alert('Message sent!');
+      }).catch(error => {
+        if (error.response.status === 422) {
+          this.errors = error.response.data.errors || {};
+        }
+      });
+    },
+  },
+}
+</script>
+
+    We’ve two object’s keeping track of our errors and form fields
+    There’s a method which will be called when we submit our form to send a POST request to our submission route, passing our form fields.
+    When the request succeeds we simply alert.
+    When the request fails, we check the status code and set the errors object.
+
+Then we edit our existing HTML in the <template> part of our code to:
+
+<template>
+    <form @submit.prevent="submit">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" class="form-control" name="name" id="name" v-model="fields.name" />
+            <div v-if="errors && errors.name" class="text-danger">{{ errors.name[0] }}</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" class="form-control" name="email" id="email" v-model="fields.email" />
+            <div v-if="errors && errors.email" class="text-danger">{{ errors.email[0] }}</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="message">Message</label>
+            <textarea class="form-control" id="message" name="message" rows="5" v-model="fields.message"></textarea>
+            <div v-if="errors && errors.message" class="text-danger">{{ errors.message[0] }}</div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Send message</button>
+    </form>
+</template>
+
+    We add v-model directive to each of our input fields, to track the values and place it directly in our fields object.
+    We check if there are any errors and if the errors match the current field, then we show it inline just beneath the field.
+    On our <form> element we’ll add a little directive to call our submit method and prevent the form to do anything else.
+
+    Make sure that your <head> contains the csrf token to be able to send ajax requests with axios: <meta name="csrf-token" content="{{ csrf_token() }}">
+
+Now that we can process our form on the client side, let’s make sure our backend is setup to handle the request. Create a new controller with the following command:
+
+php artisan make:controller ContactFormController
+
+This created a new controller file named ContactFormController.php located in /app/Http/Controllers. Open this file and add the following:
+
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class ContactFormController extends Controller
+{
+    public function submit(Request $request) {
+        $this->validate($request, [
+            'name' => 'required|string',
+            'email' => 'required|email',
+            'message' => 'required',
+        ]);
+
+        /*
+          Add mail functionality here.
+        */
+
+        return response()->json(null, 200);
+    }
+}
+view raw
+ExampleFour.php hosted with ? by GitHub 
+
+
+When the validation fails it automatically returns a 422 response ‘Unprocessable Entity’ included with error messages, which we catch in our component’s javascript.
+
+Head over to /routes/web.php and add the route to this controller method:
+
+Route::post('/submit', 'ContactFormController@submit');
+
+My route file will now look like this:
+
+<?php
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::post('/submit', 'ContactFormController@submit');
+
+Now that the route and controller is set-up, we can try to submit our form. Without any values you should see something like this:
+
+When you submit it correctly, you should see an alert. To make this a little more fancy we’ll add our message to the page, make sure the previous request is processed before sending a new one (client-side) and clear the form fields after a successful submit.
+
+<template>
+    <form @submit.prevent="submit">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" class="form-control" name="name" id="name" v-model="fields.name" />
+            <div v-if="errors && errors.name" class="text-danger">{{ errors.name[0] }}</div>
+        </div>
+	
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" class="form-control" name="email" id="email" v-model="fields.email" />
+            <div v-if="errors && errors.email" class="text-danger">{{ errors.email[0] }}</div>
+        </div>
+	
+        <div class="form-group">
+            <label for="message">Message</label>
+            <textarea class="form-control" id="message" name="message" rows="5" v-model="fields.message"></textarea>
+            <div v-if="errors && errors.message" class="text-danger">{{ errors.message[0] }}</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Send message</button>
+
+        <div v-if="success" class="alert alert-success mt-3">
+            Message sent!
+        </div>
+    </form>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      fields: {},
+      errors: {},
+      success: false,
+      loaded: true,
+    }
+  },
+  methods: {
+    submit() {
+      if (this.loaded) {
+        this.loaded = false;
+        this.success = false;
+        this.errors = {};
+        axios.post('/submit', this.fields).then(response => {
+          this.fields = {}; //Clear input fields.
+          this.loaded = true;
+          this.success = true;
+        }).catch(error => {
+          this.loaded = true;
+          if (error.response.status === 422) {
+            this.errors = error.response.data.errors || {};
+          }
+        });
+      }
+    },
+  },
+}
+</script>
+
+    We added a ‘loaded’ boolean so check if our previous request has been processed.
+    We added a ‘success’ boolean to check if the request was successful, it it is we show an ‘alert message’ in the HTML using the v-if directive.
+
+Just a little extra, we could create a Vue mixin to make it a little bit more reuseable. Create a new file in /resouces/assets/js and call it FormMixin.js. Add the entire content of <script> inside of it and tweak it bit like:
+
+export default {
+  data() {
+    return {
+      fields: {},
+      errors: {},
+      success: false,
+      loaded: true,
+      action: '',
+    }
+  },
+
+  methods: {
+
+    submit() {
+      if (this.loaded) {
+        this.loaded = false;
+        this.success = false;
+        this.errors = {};
+        axios.post(this.action, this.fields).then(response => {
+          this.fields = {}; //Clear input fields.
+          this.loaded = true;
+          this.success = true;
+        }).catch(error => {
+          this.loaded = true;
+          if (error.response.status === 422) {
+            this.errors = error.response.data.errors || {};
+          }
+        });
+      }
+    },
+
+  },
+}
+
+This is the entire content of FormMixin.js
+
+    We’ve added a string in the data object ‘action’ and point to it as our URL in the axios POST method. So we can override it in our component.
+
+The next step is to replace the script in our component ContactForm.vue to:
+
+<script>
+import FormMixin from '../FormMixin';
+
+export default {
+  mixins: [ FormMixin ],
+
+  data() {
+    return {
+      'action': '/submit',
+    }
+  }
+}
+</script>
+
+We can override the action so we can have a diffrent action for each new component extending FormMixin.js. Our entire ContactForm.vue compone
+<template>
+    <form @submit.prevent="submit">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" class="form-control" name="name" id="name" v-model="fields.name" />
+            <div v-if="errors && errors.name" class="text-danger">{{ errors.name[0] }}</div>
+        </div>
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" class="form-control" name="email" id="email" v-model="fields.email" />
+            <div v-if="errors && errors.email" class="text-danger">{{ errors.email[0] }}</div>
+        </div>
+        <div class="form-group">
+            <label for="message">Message</label>
+            <textarea class="form-control" id="message" name="message" rows="5" v-model="fields.message"></textarea>
+            <div v-if="errors && errors.message" class="text-danger">{{ errors.message[0] }}</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Send message</button>
+
+        <div v-if="success" class="alert alert-success mt-3">
+            Message sent!
+        </div>
+    </form>
+</template>
+
+<script>
+import FormMixin from '../FormMixin';
+export default {
+  mixins: [ FormMixin ],
+  data() {
+    return {
+      'action': '/submit',
+    }
+  }
+}
+</script>
+
+Our FormMixin.js located in /resources/assets/js looks like this:
+
+
+export default {
+  data() {
+    return {
+      fields: {},
+      errors: {},
+      success: false,
+      loaded: true,
+      action: '',
+    }
+  },
+
+  methods: {
+
+    submit() {
+      if (this.loaded) {
+        this.loaded = false;
+        this.success = false;
+        this.errors = {};
+        axios.post(this.action, this.fields).then(response => {
+          this.fields = {}; //Clear input fields.
+          this.loaded = true;
+          this.success = true;
+        }).catch(error => {
+          this.loaded = true;
+          if (error.response.status === 422) {
+            this.errors = error.response.data.errors || {};
+          }
+        });
+      }
+    },
+
+  },
+}
+
+
+And that’s it, it’s a basic way of submitting forms using Laravel and Vue. Feel free to contact me if you have any questions or improvements, I’m happy to help.
